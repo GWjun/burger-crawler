@@ -14,7 +14,7 @@ git clone <repository-url>
 cd burger-crawler
 
 # 설정 스크립트 실행
-setup.bat
+.\setup.bat
 ```
 
 ### Linux/Mac
@@ -47,13 +47,12 @@ cp .env.example .env
 
 ## 환경 변수 설정
 
-`.env` 파일에서 다음 설정을 편집:
+`.env` 파일에서 다음 필수 설정을 편집합니다:
 
 ```env
 # Supabase Configuration
 SUPABASE_URL=your_supabase_url_here
 SUPABASE_KEY=your_supabase_anon_key_here
-SUPABASE_SERVICE_KEY=your_supabase_service_key_here
 
 # Crawling Settings
 HEADLESS_MODE=True
@@ -61,9 +60,9 @@ REQUEST_DELAY=1
 CRAWL_INTERVAL_HOURS=6
 ```
 
-## 🗃️ DB 스키마
+## DB 스키마
 
-Supabase에 다음과 같은 테이블 구조를 사용합니다:
+Supabase에 다음과 같은 테이블 구조를 사용합니다
 
 ```sql
 -- 브랜드 테이블
@@ -142,12 +141,12 @@ python main.py run-once
 python main.py scheduler
 ```
 
-## 🕷️ 지원 브랜드
+## 지원 브랜드
 
-- 🟠 **롯데리아** (Lotteria)
-- 🔴 **버거킹** (Burger King)
-- ⚫ **노브랜드 버거** (No Brand Burger)
-- 🔵 **KFC** (Kentucky Fried Chicken)
+- **롯데리아** (Lotteria)
+- **버거킹** (Burger King)
+- **노브랜드 버거** (No Brand Burger)
+- **KFC** (Kentucky Fried Chicken)
 
 ## 프로젝트 구조
 
