@@ -23,7 +23,7 @@ class CrawlerScheduler:
                 # 중복 체크 후 삽입
                 new_items = []
                 for item in burger_data:
-                    if not self.db_manager.check_duplicate(item['name'], item['brand']):
+                    if not self.db_manager.check_duplicate_product(item['name'], item['brand_name']):
                         new_items.append(item)
                 
                 if new_items:

@@ -14,6 +14,7 @@ load_dotenv()
 from src.scheduler import CrawlerScheduler
 from src.crawlers import get_crawler, CRAWLERS
 from src.database import SupabaseManager
+from src.dummy_data import create_dummy_burger_data, get_brand_dummy_data
 from config import settings
 
 # 로거 설정
@@ -52,25 +53,70 @@ def test_database():
     """데이터베이스 연결 테스트"""
     try:
         db = SupabaseManager()
+        
+        # 테스트용 더미 데이터
         test_data = {
             'name': 'Test Burger',
-            'brand': 'Test Brand',
-            'price': '5000원',
+            'brand_name': 'Test Brand',
+            'brand_name_eng': 'test_brand',
             'description': 'Test Description',
+            'description_full': 'Full Test Description',
             'image_url': 'https://example.com/image.jpg',
-            'is_new': True,
-            'source_url': 'https://example.com'
+            'price': 5000,
+            'set_price': 7000,
+            'available': True,
+            'category': '버거',
+            'shop_url': 'https://example.com/shop',
+            'brand_website_url': 'https://example.com',
+            'nutrition': {
+                'calories': 500,
+                'fat': 25.5,
+                'protein': 20.0,
+                'sugar': 5.5,
+                'sodium': 800
+            }
         }
         
         # 테스트 데이터 삽입
-        success = db.insert_burger_data(test_data)
+        success = db.insert_complete_burger_data(test_data)
         if success:
-            logger.info("Database test successful")
+            logger.info("Database test successful - Complete burger data inserted")
+            
+            # 최신 제품 조회 테스트
+            latest_products = db.get_latest_products(limit=5)
+            logger.info(f"Found {len(latest_products)} latest products")
+            
         else:
             logger.error("Database test failed")
             
     except Exception as e:
         logger.error(f"Database test error: {str(e)}")
+
+
+def test_dummy_data():
+    """더미 데이터로 DB 테스트"""
+    try:
+        db = SupabaseManager()
+        
+        # 더미 데이터 생성
+        dummy_burgers = create_dummy_burger_data()
+        logger.info(f"Generated {len(dummy_burgers)} dummy burger data")
+        
+        # 데이터 삽입
+        success = db.insert_bulk_burger_data(dummy_burgers)
+        if success:
+            logger.info("Dummy data insertion successful")
+            
+            # 결과 확인
+            latest = db.get_latest_products(limit=10)
+            logger.info(f"Latest {len(latest)} products in database")
+            for product in latest[:3]:  # 처음 3개만 출력
+                logger.info(f"- {product.get('name')} ({product.get('brand_name')}) - {product.get('price')}원")
+        else:
+            logger.error("Dummy data insertion failed")
+            
+    except Exception as e:
+        logger.error(f"Dummy data test error: {str(e)}")
 
 
 def main():
@@ -89,12 +135,16 @@ def main():
                 test_crawler(brand)
             else:
                 logger.info("Available brands: " + ", ".join(CRAWLERS.keys()))
+        elif command == "test-dummy":
+            test_dummy_data()
         elif command == "run-once":
             scheduler = CrawlerScheduler()
             scheduler.run_all_crawlers()
         elif command == "scheduler":
             scheduler = CrawlerScheduler()
             scheduler.start_scheduler()
+        elif command == "test-dummy":
+            test_dummy_data()
         else:
             logger.error(f"Unknown command: {command}")
             print_usage()
@@ -110,10 +160,12 @@ def print_usage():
 Usage: python main.py [command]
 
 Commands:
-  scheduler     - Start the scheduler (default)
-  run-once      - Run all crawlers once
-  test-db       - Test database connection
+  scheduler       - Start the scheduler (default)
+  run-once        - Run all crawlers once
+  test-db         - Test database connection
+  test-dummy      - Test with dummy data
   test-crawler <brand>  - Test specific crawler
+  test-dummy    - Test dummy data insertion
   
 Available brands: """ + ", ".join(CRAWLERS.keys()))
 

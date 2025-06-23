@@ -61,12 +61,61 @@ REQUEST_DELAY=1
 CRAWL_INTERVAL_HOURS=6
 ```
 
-## DB 스키마
+## 🗃️ DB 스키마
 
-Supabase에 다음과 같은 테이블 구조가 필요합니다:
+Supabase에 다음과 같은 테이블 구조를 사용합니다:
 
 ```sql
--- 추후 DB 스키마
+-- 브랜드 테이블
+model Brand {
+  id                   BigInt      @id @default(autoincrement())
+  name                 String      @unique @db.VarChar
+  description          String?
+  logo_url             String?     @db.VarChar
+  website_url          String?     @db.VarChar
+  created_at           DateTime    @default(now()) @db.Timestamptz(6)
+  likes_count          Int         @default(0)
+  name_eng             String      @unique @db.VarChar
+  background_image_url String?     @db.VarChar
+  Product              Product[]
+}
+
+-- 제품 테이블
+model Product {
+  product_id       BigInt        @id @default(autoincrement())
+  created_at       DateTime      @default(now()) @db.Timestamptz(6)
+  name             String        @db.VarChar
+  description      String?
+  image_url        String?       @db.VarChar
+  price            Int
+  available        Boolean?      @default(true)
+  category         String?       @db.VarChar
+  shop_url         String?       @db.VarChar
+  set_price        Int?
+  description_full String?
+  released_at      DateTime?     @db.Timestamptz(6)
+  brand_name       String        @db.VarChar
+  likes_count      Int           @default(0)
+  dislikes_count   Int           @default(0)
+  patty            Patty         @default(undefined)
+  dev_comment      String?       @db.VarChar
+  review_count     Int           @default(0)
+  score_avg        Float         @default(0) @db.Real
+  Nutrition        Nutrition?
+  Brand            Brand         @relation(fields: [brand_name], references: [name])
+}
+
+-- 영양 정보 테이블
+model Nutrition {
+  product_id BigInt   @id @default(autoincrement())
+  calories   Decimal? @db.Decimal
+  fat        Decimal? @db.Decimal
+  protein    Decimal? @db.Decimal
+  sugar      Decimal? @db.Decimal
+  sodium     Decimal? @db.Decimal
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  Products   Product  @relation(fields: [product_id], references: [product_id])
+}
 ```
 
 ## 사용 방법
@@ -93,7 +142,12 @@ python main.py run-once
 python main.py scheduler
 ```
 
-## 브랜드 출처
+## 🕷️ 지원 브랜드
+
+- 🟠 **롯데리아** (Lotteria)
+- 🔴 **버거킹** (Burger King)
+- ⚫ **노브랜드 버거** (No Brand Burger)
+- 🔵 **KFC** (Kentucky Fried Chicken)
 
 ## 프로젝트 구조
 
