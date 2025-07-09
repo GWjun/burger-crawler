@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 import time
 import re
+import json
 from datetime import datetime
 from config import settings
 from src.__mock__.dummy_data import get_brand_dummy_data
@@ -92,22 +93,54 @@ class BaseCrawler(ABC):
 class LotteriaCrawler(BaseCrawler):
     def __init__(self):
         super().__init__()
-        self.base_url = "https://www.lotteria.com"
+        self.base_url = "https://www.lotteeatz.com"
         self.brand_name = "롯데리아"
         self.brand_name_eng = "lotteria"
 
     def crawl(self) -> List[Dict[str, Any]]:
         """롯데리아 신제품 크롤링"""
         logger.info(f"Starting {self.brand_name} crawling...")
+        burgers = []
+        
+        menu_url = f"{self.base_url}/brand/ria"
+        
+        try:
+            response = self.session.get(menu_url)
+            response.raise_for_status()
+            html_content = response.text
 
-        # 임시로 더미 데이터 반환 (실제 크롤링 로직 구현 전까지)
-        logger.warning("Using dummy data - Replace with actual crawling logic")
-        dummy_burgers = get_brand_dummy_data("lotteria", 3)
+            # pList 데이터를 정규식으로 추출
+            match = re.search(r'var pList = (.*?);', html_content, re.DOTALL)
+            if match:
+                json_str = match.group(1)
+                product_list = json.loads(json_str)
 
-        logger.info(
-            f"Finished {self.brand_name} crawling. Found {len(dummy_burgers)} items"
-        )
-        return dummy_burgers
+                for item in product_list:
+                    if item.get('displayCategoryNm') == '버거':
+                        burger_data = self.create_burger_data_template(
+                            name=item.get('presPrdNm'),
+                            brand_name=self.brand_name,
+                            brand_name_eng=self.brand_name_eng
+                        )
+                        burger_data["price"] = self.extract_price(str(item.get('sellPrice')))
+                        burger_data["image_url"] = f"https://img.lotteeatz.com{item.get('imgPath')}{item.get('imgSystemFileNm')}.{item.get('imgExtsn')}"
+                        burger_data["description"] = item.get('dispNm')
+                        burger_data["shop_url"] = f"{self.base_url}/products/introductions/{item.get('presPrdId')}"
+                        burgers.append(burger_data)
+            else:
+                logger.warning("Could not find pList data in the HTML.")
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error during crawling {self.brand_name}: {e}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding JSON from pList: {e}")
+        except Exception as e:
+            logger.error(f"An unexpected error occurred: {e}")
+
+        logger.info(f"Finished {self.brand_name} crawling. Found {len(burgers)} items")
+        return burgers
+
+
 
 
 class BurgerKingCrawler(BaseCrawler):
