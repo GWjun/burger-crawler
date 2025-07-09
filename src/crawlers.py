@@ -101,31 +101,37 @@ class LotteriaCrawler(BaseCrawler):
         """롯데리아 신제품 크롤링"""
         logger.info(f"Starting {self.brand_name} crawling...")
         burgers = []
-        
+
         menu_url = f"{self.base_url}/brand/ria"
-        
+
         try:
             response = self.session.get(menu_url)
             response.raise_for_status()
             html_content = response.text
 
             # pList 데이터를 정규식으로 추출
-            match = re.search(r'var pList = (.*?);', html_content, re.DOTALL)
+            match = re.search(r"var pList = (.*?);", html_content, re.DOTALL)
             if match:
                 json_str = match.group(1)
                 product_list = json.loads(json_str)
 
                 for item in product_list:
-                    if item.get('displayCategoryNm') == '버거':
+                    if item.get("displayCategoryNm") == "버거":
                         burger_data = self.create_burger_data_template(
-                            name=item.get('presPrdNm'),
+                            name=item.get("presPrdNm"),
                             brand_name=self.brand_name,
-                            brand_name_eng=self.brand_name_eng
+                            brand_name_eng=self.brand_name_eng,
                         )
-                        burger_data["price"] = self.extract_price(str(item.get('sellPrice')))
-                        burger_data["image_url"] = f"https://img.lotteeatz.com{item.get('imgPath')}{item.get('imgSystemFileNm')}.{item.get('imgExtsn')}"
-                        burger_data["description"] = item.get('dispNm')
-                        burger_data["shop_url"] = f"{self.base_url}/products/introductions/{item.get('presPrdId')}"
+                        burger_data["price"] = self.extract_price(
+                            str(item.get("sellPrice"))
+                        )
+                        burger_data["image_url"] = (
+                            f"https://img.lotteeatz.com{item.get('imgPath')}{item.get('imgSystemFileNm')}.{item.get('imgExtsn')}"
+                        )
+                        burger_data["description"] = item.get("dispNm")
+                        burger_data["shop_url"] = (
+                            f"{self.base_url}/products/introductions/{item.get('presPrdId')}"
+                        )
                         burgers.append(burger_data)
             else:
                 logger.warning("Could not find pList data in the HTML.")
@@ -139,8 +145,6 @@ class LotteriaCrawler(BaseCrawler):
 
         logger.info(f"Finished {self.brand_name} crawling. Found {len(burgers)} items")
         return burgers
-
-
 
 
 class BurgerKingCrawler(BaseCrawler):
@@ -209,9 +213,9 @@ class KFCCrawler(BaseCrawler):
 # 크롤러 팩토리
 CRAWLERS = {
     "lotteria": LotteriaCrawler,
-    "burger_king": BurgerKingCrawler,
-    "nobrand_burger": NoBrandBurgerCrawler,
-    "kfc": KFCCrawler,
+    # "burger_king": BurgerKingCrawler,
+    # "nobrand_burger": NoBrandBurgerCrawler,
+    # "kfc": KFCCrawler,
 }
 
 

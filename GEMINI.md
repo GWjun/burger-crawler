@@ -1,72 +1,6 @@
 아래의 스키마를 참고해서 답변해줘
 
-model User {
-id String @id @default(cuid())
-name String?
-email String @unique
-emailVerified DateTime?
-image String?
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
-accounts Account[]
-Authenticator Authenticator[]
-BrandLike BrandLike[]
-ProductLike ProductLike[]
-Review Review[]
-ReviewLike ReviewLike[]
-sessions Session[]
-}
-
-model Account {
-userId String
-type String
-provider String
-providerAccountId String
-refresh_token String?
-access_token String?
-expires_at Int?
-token_type String?
-scope String?
-id_token String?
-session_state String?
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
-user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-@@id([provider, providerAccountId])
-}
-
-model Session {
-sessionToken String @unique
-userId String
-expires DateTime
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
-user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-identifier String
-token String
-expires DateTime
-
-@@id([identifier, token])
-}
-
-model Authenticator {
-credentialID String @unique
-userId String
-providerAccountId String
-credentialPublicKey String
-counter Int
-credentialDeviceType String
-credentialBackedUp Boolean
-transports String?
-user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-@@id([userId, credentialID])
-}
-
+```prisma
 model Nutrition {
 product_id BigInt @id @default(autoincrement())
 calories Decimal? @db.Decimal
@@ -118,70 +52,6 @@ ProductLike ProductLike[]
 Review Review[]
 }
 
-model ProductLike {
-id BigInt @id @default(autoincrement())
-userId String
-product_id BigInt
-is_like Boolean
-created_at DateTime @default(now()) @db.Timestamptz(6)
-Product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction, map: "ProductLike_productId_fkey")
-User User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-@@unique([userId, product_id], map: "unique_user_product")
-@@index([userId, product_id], map: "idx_user_product")
-}
-
-model Review {
-id BigInt @id @default(autoincrement())
-userId String
-product_id BigInt
-comment String?
-consumed_at DateTime @db.Timestamptz(6)
-created_at DateTime @default(now()) @db.Timestamptz(6)
-score Float @db.Real
-likes_count Int @default(0)
-dislikes_count Int @default(0)
-Product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction, map: "Review_productId_fkey")
-User User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-ReviewImage ReviewImage[]
-ReviewLike ReviewLike[]
-}
-
-model ReviewImage {
-id BigInt @id @default(autoincrement())
-review_id BigInt
-image_url String
-created_at DateTime @default(now()) @db.Timestamptz(6)
-Review Review @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model ReviewLike {
-id BigInt @id @default(autoincrement())
-userId String
-review_id BigInt
-is_like Boolean
-created_at DateTime @default(now()) @db.Timestamptz(6)
-Review Review @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-User User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-@@unique([userId, review_id], map: "unique_user_review")
-@@index([userId, review_id], map: "idx_user_review")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model BrandLike {
-id BigInt @id @default(autoincrement())
-userId String
-brand_id BigInt
-created_at DateTime @default(now()) @db.Timestamptz(6)
-Brand Brand @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-User User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-@@unique([userId, brand_id], map: "unique_user_brand")
-@@index([userId, brand_id], map: "idx_user_brand")
-}
-
 enum Patty {
 meat
 shrimp
@@ -190,3 +60,4 @@ squid
 vegan
 undefined
 }
+```
