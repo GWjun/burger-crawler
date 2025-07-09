@@ -141,7 +141,7 @@ python main.py run-once
 python main.py scheduler
 ```
 
-## 지원 브랜드
+## 브랜드 출처
 
 - **롯데리아** (Lotteria)
 - **버거킹** (Burger King)

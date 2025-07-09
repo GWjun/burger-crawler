@@ -7,7 +7,7 @@ import time
 import re
 from datetime import datetime
 from config import settings
-from src.dummy_data import get_brand_dummy_data
+from src.__mock__.dummy_data import get_brand_dummy_data
 
 # Selenium imports (현재 더미 데이터 사용 중이므로 주석 처리)
 # from selenium import webdriver
