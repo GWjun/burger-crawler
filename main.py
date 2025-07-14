@@ -122,6 +122,34 @@ def test_dummy_data():
         logger.error(f"Dummy data test error: {str(e)}")
 
 
+def run_single_crawler(brand: str):
+    """특정 브랜드 크롤러 한 번 실행 (데이터베이스 저장)"""
+    try:
+        logger.info(f"Starting single crawl for {brand}")
+
+        # 크롤러 생성 및 실행
+        crawler = get_crawler(brand)
+        data = crawler.crawl()
+
+        if not data:
+            logger.warning(f"No data found for {brand}")
+            return
+
+        logger.info(f"Crawled {len(data)} items for {brand}")
+
+        # 데이터베이스에 저장
+        db = SupabaseManager()
+        success = db.insert_bulk_burger_data(data)
+
+        if success:
+            logger.info(f"Successfully saved {len(data)} items for {brand} to database")
+        else:
+            logger.error(f"Failed to save data for {brand} to database")
+
+    except Exception as e:
+        logger.error(f"Single crawl failed for {brand}: {str(e)}")
+
+
 def main():
     """메인 함수"""
     setup_logger()
@@ -137,6 +165,13 @@ def main():
                 brand = sys.argv[2]
                 test_crawler(brand)
             else:
+                logger.info("Available brands: " + ", ".join(get_available_brands()))
+        elif command == "crawl":
+            if len(sys.argv) > 2:
+                brand = sys.argv[2]
+                run_single_crawler(brand)
+            else:
+                logger.error("Please specify a brand")
                 logger.info("Available brands: " + ", ".join(get_available_brands()))
         elif command == "test-dummy":
             test_dummy_data()
@@ -166,10 +201,10 @@ Usage: python main.py [command]
 Commands:
   scheduler       - Start the scheduler (default)
   run-once        - Run all crawlers once
+  crawl <brand>   - Run single brand crawler once and save to DB
   test-db         - Test database connection
   test-dummy      - Test with dummy data
-  test-crawler <brand>  - Test specific crawler
-  test-dummy    - Test dummy data insertion
+  test-crawler <brand>  - Test specific crawler (no DB save)
   
 Available brands: """
         + ", ".join(get_available_brands())

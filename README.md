@@ -37,7 +37,7 @@ edge://version/
 ./edgedriver_win64/msedgedriver.exe --version
 ```
 
-## 패키지 설치
+## 환경 설정
 
 ### Windows
 
@@ -73,24 +73,22 @@ source venv/Scripts/activate  # Windows
 # 패키지 설치
 pip install -r requirements.txt
 
-# 환경 변수 설정
-cp .env.example .env
-# .env 파일 편집
+# 환경 변수 설정 파일 생성
+cp .env.example .env.development
+cp .env.example .env.production
+# 각 환경 파일 편집
 ```
 
-## 환경 변수 설정
+## 실행 방법
 
-`.env` 파일에서 다음 필수 설정을 편집합니다:
+```bash
+# 개발 환경
+run_dev.bat          # Windows
+./run_dev.sh         # Linux/Mac
 
-```env
-# Supabase Configuration
-SUPABASE_URL=your_supabase_url_here
-SUPABASE_KEY=your_supabase_anon_key_here
-
-# Crawling Settings
-HEADLESS_MODE=True
-REQUEST_DELAY=1
-CRAWL_INTERVAL_HOURS=6
+# 프로덕션 환경
+run_prod.bat         # Windows
+./run_prod.sh        # Linux/Mac
 ```
 
 ## DB 스키마
@@ -164,8 +162,11 @@ python main.py
 # 데이터베이스 연결 테스트
 python main.py test-db
 
-# 특정 브랜드 크롤러 테스트
-python main.py test-crawler mcdonalds
+# 특정 브랜드 크롤링 테스트
+python main.py test-crawler lotteria
+
+# 특정 브랜드 크롤링
+python main.py crawl lotteria
 
 # 모든 크롤러 한 번 실행
 python main.py run-once

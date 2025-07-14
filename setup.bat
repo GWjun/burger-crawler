@@ -20,19 +20,22 @@ echo Creating logs directory...
 if not exist "logs" mkdir logs
 
 REM 환경 변수 파일 복사
-echo Setting up environment file...
-if not exist ".env" (
-    copy .env.example .env
-    echo ⚠️  Please edit .env file with your Supabase credentials
+echo Setting up environment files...
+if not exist ".env.development" (
+    copy .env.example .env.development
+    echo ✅ Created .env.development
+)
+if not exist ".env.production" (
+    copy .env.example .env.production
+    echo ✅ Created .env.production
 )
 
 echo ✅ Setup completed!
 echo.
 echo Next steps:
-echo 1. Edit .env file with your Supabase credentials
-echo 2. Test database connection: python main.py test-db
-echo 3. Test crawler: python main.py test-crawler mcdonalds
-echo 4. Run once: python main.py run-once
-echo 5. Start scheduler: python main.py scheduler
+echo 1. Edit .env.development and .env.production files with your Supabase credentials
+echo 2. Run development: run_dev.bat
+echo 3. Run production: run_prod.bat
+echo 4. Test database connection: python main.py test-db
 
 pause
