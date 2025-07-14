@@ -4,7 +4,12 @@ from typing import Optional
 
 
 def get_env_file():
-    """환경에 따른 .env 파일 경로 반환"""
+    """
+    Determine the appropriate .env file path based on the current environment.
+    
+    Returns:
+        str or None: The path to the environment-specific .env file if found, otherwise None.
+    """
     env = os.getenv("ENVIRONMENT", "development")
 
     if env == "production":
@@ -49,7 +54,9 @@ class Settings(BaseSettings):
 
 
 def get_settings() -> Settings:
-    """설정 인스턴스를 반환하는 팩토리 함수"""
+    """
+    Factory function that creates and returns a new Settings instance with environment-specific configuration.
+    """
     return Settings()
 
 

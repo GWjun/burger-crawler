@@ -9,6 +9,9 @@ from datetime import datetime
 
 class SupabaseManager:
     def __init__(self):
+        """
+        Initialize the SupabaseManager with a Supabase client using configuration settings.
+        """
         self.client: Client = create_client(
             settings.supabase_url, settings.supabase_key
         )
@@ -16,7 +19,13 @@ class SupabaseManager:
 
     def get_or_create_brand(self, brand_data: Dict[str, Any]) -> Optional[int]:
         """
-        브랜드를 조회하거나 생성
+        Retrieve the ID of a brand by name, or create a new brand entry if it does not exist.
+        
+        Parameters:
+            brand_data (Dict[str, Any]): Dictionary containing brand information, including the brand name.
+        
+        Returns:
+            Optional[int]: The ID of the existing or newly created brand, or None if the operation fails.
         """
         try:
             # 기존 브랜드 조회
@@ -46,7 +55,13 @@ class SupabaseManager:
 
     def insert_product_data(self, product_data: Dict[str, Any]) -> Optional[int]:
         """
-        제품 데이터를 Supabase에 삽입
+        Insert product data into the Supabase "Product" table and return the inserted product's ID.
+        
+        Parameters:
+            product_data (dict): Dictionary containing product information to be inserted.
+        
+        Returns:
+            int or None: The ID of the inserted product if successful, otherwise None.
         """
         try:
             # 데이터 직렬화
@@ -63,7 +78,12 @@ class SupabaseManager:
 
     def insert_nutrition_data(self, nutrition_data: Dict[str, Any]) -> bool:
         """
-        영양 정보 데이터를 Supabase에 삽입
+        Insert nutrition data into the Supabase "Nutrition" table.
+        
+        Serializes the provided nutrition data and attempts to insert it into the database.
+        
+        Returns:
+            bool: True if the insertion succeeds, False otherwise.
         """
         try:
             # 데이터 직렬화
@@ -79,7 +99,9 @@ class SupabaseManager:
 
     def insert_complete_burger_data(self, burger_data: Dict[str, Any]) -> bool:
         """
-        완전한 햄버거 데이터 삽입 (제품 + 영양정보)
+        Insert a complete burger entry, including brand, product, and optional nutrition data, into the database.
+        
+        Attempts to create or retrieve the brand, insert the product, and, if nutrition information is provided, insert the associated nutrition data. Returns True if all required steps succeed, otherwise False.
         """
         try:
             # 1. 브랜드 확인/생성
@@ -158,7 +180,9 @@ class SupabaseManager:
 
     def insert_bulk_burger_data(self, data_list: List[Dict[str, Any]]) -> bool:
         """
-        여러 햄버거 데이터를 일괄 삽입
+        Insert multiple burger data entries in bulk.
+        
+        Iterates over a list of burger data dictionaries, inserting each one individually. Returns True if at least one insert succeeds; otherwise, returns False.
         """
         try:
             success_count = 0
@@ -177,7 +201,14 @@ class SupabaseManager:
 
     def check_duplicate_product(self, name: str, brand_name: str) -> bool:
         """
-        중복 제품 확인
+        Check if a product with the given name and brand already exists in the database.
+        
+        Parameters:
+            name (str): The name of the product to check.
+            brand_name (str): The name of the brand associated with the product.
+        
+        Returns:
+            bool: True if a duplicate product exists, False otherwise or on error.
         """
         try:
             result = (
@@ -196,7 +227,14 @@ class SupabaseManager:
         self, limit: int = 10, brand_name: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        최신 제품 데이터 조회
+        Retrieve the most recent products, optionally filtered by brand name.
+        
+        Parameters:
+            limit (int): Maximum number of products to retrieve. Defaults to 10.
+            brand_name (str, optional): If provided, only products from this brand are returned.
+        
+        Returns:
+            List[Dict[str, Any]]: A list of product records, or an empty list if retrieval fails.
         """
         try:
             query = (
@@ -217,7 +255,13 @@ class SupabaseManager:
 
     def get_product_with_nutrition(self, product_id: int) -> Optional[Dict[str, Any]]:
         """
-        제품과 영양정보를 함께 조회
+        Retrieve a product by its ID along with its associated nutrition information.
+        
+        Parameters:
+            product_id (int): The unique identifier of the product to retrieve.
+        
+        Returns:
+            dict or None: A dictionary containing product data with an added "nutrition" key if nutrition information exists, or None if the product is not found or an error occurs.
         """
         try:
             # 제품 정보 조회
@@ -250,7 +294,15 @@ class SupabaseManager:
 
     def _serialize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        데이터를 JSON 직렬화 가능한 형태로 변환
+        Convert a dictionary's values to JSON-serializable formats.
+        
+        Datetime objects are converted to ISO 8601 strings, Decimal objects to floats, and None values are preserved. All other types remain unchanged.
+        
+        Parameters:
+            data (Dict[str, Any]): The input dictionary to serialize.
+        
+        Returns:
+            Dict[str, Any]: A new dictionary with all values converted to JSON-serializable types.
         """
         serialized = {}
         for key, value in data.items():

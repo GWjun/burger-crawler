@@ -21,7 +21,18 @@ CRAWLERS: Dict[str, Type[BaseCrawler]] = {
 
 
 def get_crawler(brand: str) -> BaseCrawler:
-    """브랜드별 크롤러 반환"""
+    """
+    Return an instance of the crawler associated with the specified brand.
+    
+    Parameters:
+        brand (str): The brand name for which to retrieve a crawler instance.
+    
+    Returns:
+        BaseCrawler: An instance of the crawler class registered for the given brand.
+    
+    Raises:
+        ValueError: If the specified brand is not supported.
+    """
     if brand in CRAWLERS:
         return CRAWLERS[brand]()
     else:
@@ -31,10 +42,19 @@ def get_crawler(brand: str) -> BaseCrawler:
 
 
 def get_available_brands() -> list[str]:
-    """사용 가능한 브랜드 목록 반환"""
+    """
+    Return a list of all brand names currently registered in the crawler factory.
+    
+    Returns:
+        list[str]: List of available brand names.
+    """
     return list(CRAWLERS.keys())
 
 
 def register_crawler(brand: str, crawler_class: Type[BaseCrawler]) -> None:
-    """새로운 크롤러 등록"""
+    """
+    Register or update a crawler class for a specific brand.
+    
+    Adds the given crawler class to the internal registry under the specified brand name, allowing it to be retrieved by brand in future operations.
+    """
     CRAWLERS[brand] = crawler_class

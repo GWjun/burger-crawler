@@ -9,11 +9,22 @@ from config import settings
 
 class CrawlerScheduler:
     def __init__(self):
+        """
+        Initialize the CrawlerScheduler with a SupabaseManager for database operations and log the scheduler's initialization.
+        """
         self.db_manager = SupabaseManager()
         logger.info("Crawler Scheduler initialized")
 
     def run_single_crawler(self, brand: str, auto_confirm: bool = False):
-        """단일 브랜드 크롤링 실행"""
+        """
+        Crawls burger product data for a single brand, filters out duplicates, and optionally inserts new items into the database.
+        
+        If new products are found, their details are logged. When `auto_confirm` is False, prompts the user for confirmation before saving new items; otherwise, inserts them automatically. Logs the outcome of the operation and handles any exceptions during the process.
+        
+        Parameters:
+            brand (str): The name of the brand to crawl.
+            auto_confirm (bool): If True, skips user confirmation and inserts new items automatically. Defaults to False.
+        """
         try:
             logger.info(f"Starting crawl for {brand}")
             crawler = get_crawler(brand)
@@ -78,7 +89,11 @@ class CrawlerScheduler:
             logger.error(f"Error in crawling {brand}: {str(e)}")
 
     def run_all_crawlers(self):
-        """모든 브랜드 크롤링 실행"""
+        """
+        Run the crawling process for all available brands sequentially with automatic confirmation.
+        
+        Logs the start and completion of the batch crawl, iterates through each brand returned by `get_available_brands()`, and invokes the single-brand crawler with confirmation bypassed. Introduces a delay between each brand crawl as specified in the configuration.
+        """
         logger.info("Starting crawl for all brands")
         start_time = datetime.now()
 
@@ -91,7 +106,11 @@ class CrawlerScheduler:
         logger.info(f"Completed crawl for all brands in {duration}")
 
     def start_scheduler(self):
-        """스케줄러 시작"""
+        """
+        Start the scheduler to run crawling tasks at configured intervals and specific times.
+        
+        Schedules the crawling process to run every N hours, as well as daily at 09:00 and 18:00. Executes all crawlers once immediately upon starting, then enters a loop to check and run scheduled tasks every minute.
+        """
         # 매 N시간마다 실행
         schedule.every(settings.crawl_interval_hours).hours.do(self.run_all_crawlers)
 

@@ -7,13 +7,23 @@ from src.__mock__.dummy_data import get_brand_dummy_data
 
 class BurgerKingCrawler(BaseCrawler):
     def __init__(self):
+        """
+        Initialize the BurgerKingCrawler with Burger King Korea's base URL and brand names in Korean and English.
+        """
         super().__init__()
         self.base_url = "https://www.burgerking.co.kr"
         self.brand_name = "버거킹"
         self.brand_name_eng = "burger_king"
 
     def crawl(self) -> List[Dict[str, Any]]:
-        """버거킹 신제품 크롤링"""
+        """
+        Crawls and returns a list of new product data for Burger King.
+        
+        Currently returns placeholder dummy data; actual crawling logic is yet to be implemented.
+        
+        Returns:
+            List of dictionaries containing Burger King new product information.
+        """
         logger.info(f"Starting {self.brand_name} crawling...")
 
         # TODO: 실제 크롤링 로직 구현

@@ -15,13 +15,23 @@ from .base import BaseCrawler
 
 class LotteriaCrawler(BaseCrawler):
     def __init__(self):
+        """
+        Initialize the LotteriaCrawler with brand-specific URLs and names.
+        """
         super().__init__()
         self.base_url = "https://www.lotteeatz.com"
         self.brand_name = "롯데리아"
         self.brand_name_eng = "lotteria"
 
     def crawl(self) -> List[Dict[str, Any]]:
-        """롯데리아 신제품 크롤링 (최적화된 버전)"""
+        """
+        Crawls the Lotteria website for new burger products and their nutrition information.
+        
+        Fetches the product list from the Lotteria menu page, filters for burger items, and collects details such as name, price, image URL, description, and product page URL. Uses a single Selenium WebDriver instance to efficiently extract nutrition data for each burger. Handles network, parsing, and Selenium errors gracefully, ensuring resources are properly released.
+        
+        Returns:
+            List of dictionaries, each containing burger product details and nutrition information if available.
+        """
         logger.info(f"Starting {self.brand_name} crawling...")
         burgers = []
         driver = None
@@ -108,7 +118,17 @@ class LotteriaCrawler(BaseCrawler):
     def _get_nutrition_info_with_driver(
         self, driver, product_url: str
     ) -> Optional[Dict[str, Any]]:
-        """기존 드라이버를 재사용하여 영양 정보 크롤링 (성능 최적화)"""
+        """
+        Extracts nutrition information from a product detail page using a provided Selenium WebDriver.
+        
+        Navigates to the specified product URL with the given driver, waits for the nutrition table to load, and parses key nutrition values (calories, fat, protein, sugar, sodium) from the table. Returns a dictionary of extracted nutrition data, or None if the table is not found or an error occurs.
+        
+        Parameters:
+            product_url (str): The URL of the product detail page to extract nutrition information from.
+        
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing nutrition data if found, otherwise None.
+        """
         logger.info(f"Crawling nutrition info for: {product_url}")
         try:
             driver.get(product_url)
@@ -165,7 +185,17 @@ class LotteriaCrawler(BaseCrawler):
             return None
 
     def _get_nutrition_info(self, product_url: str) -> Optional[Dict[str, Any]]:
-        """개별 제품 상세 페이지에서 영양 정보 크롤링 (단일 사용용)"""
+        """
+        Extracts nutrition information from a product detail page using a temporary Selenium WebDriver.
+        
+        Navigates to the specified product URL, waits for the nutrition table to load, and parses key nutrition values (calories, fat, protein, sugar, sodium) from the table. Returns a dictionary of extracted nutrition data, or None if the table is not found or an error occurs.
+        
+        Parameters:
+            product_url (str): The URL of the product detail page to crawl.
+        
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing nutrition information if available, otherwise None.
+        """
         logger.info(f"Crawling nutrition info for: {product_url}")
         driver = None
         try:
@@ -241,7 +271,15 @@ class LotteriaCrawler(BaseCrawler):
                     pass
 
     def _parse_nutrition_value(self, text: str) -> Optional[float]:
-        """영양 정보 텍스트에서 숫자(float) 추출"""
+        """
+        Extracts a floating-point number from a nutrition information string.
+        
+        Parameters:
+            text (str): The nutrition value text containing a numeric value.
+        
+        Returns:
+            Optional[float]: The extracted float value if parsing is successful; otherwise, None.
+        """
         match = re.search(r"([\d.]+)", text)
         if match:
             try:

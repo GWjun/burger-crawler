@@ -95,7 +95,11 @@ def test_database():
 
 
 def test_dummy_data():
-    """더미 데이터로 DB 테스트"""
+    """
+    Test database insertion and retrieval using generated dummy burger data.
+    
+    Generates dummy burger data, attempts to insert it into the database in bulk, and logs the outcome. If insertion succeeds, retrieves and logs details of the latest products. Logs errors if any step fails.
+    """
     try:
         db = SupabaseManager()
 
@@ -123,7 +127,12 @@ def test_dummy_data():
 
 
 def run_single_crawler(brand: str):
-    """특정 브랜드 크롤러 한 번 실행 (사용자 확인 후 데이터베이스 저장)"""
+    """
+    Runs the crawler for a specified brand once without requiring user confirmation.
+    
+    Parameters:
+        brand (str): The name of the brand to crawl.
+    """
     try:
         logger.info(f"Starting single crawl for {brand}")
 
@@ -136,7 +145,11 @@ def run_single_crawler(brand: str):
 
 
 def main():
-    """메인 함수"""
+    """
+    Entry point for the burger crawler application, handling command-line arguments to execute various project tasks.
+    
+    Depending on the provided command-line arguments, this function sets up logging and dispatches to database tests, crawler tests, single or scheduled crawling, dummy data insertion, or prints usage instructions. If no command is given, it starts the crawler scheduler by default.
+    """
     setup_logger()
     logger.info("Burger Crawler Started")
 
@@ -178,7 +191,9 @@ def main():
 
 
 def print_usage():
-    """사용법 출력"""
+    """
+    Prints usage instructions and lists available commands and brands for the script.
+    """
     print(
         """
 Usage: python main.py [command]

@@ -16,16 +16,35 @@ from config import settings
 
 class BaseCrawler(ABC):
     def __init__(self):
+        """
+        Initialize a new crawler instance with a requests session using a configured user-agent header.
+        """
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": settings.user_agent})
 
     @abstractmethod
     def crawl(self) -> List[Dict[str, Any]]:
-        """각 브랜드별 크롤링 구현"""
+        """
+        Abstract method to perform brand-specific web crawling.
+        
+        Returns:
+            List of dictionaries containing crawled burger data for a specific brand.
+        """
         pass
 
     def get_selenium_driver(self):
-        """Selenium WebDriver 설정 (최적화된 성능 설정)"""
+        """
+        Configure and return a Selenium Edge WebDriver instance optimized for fast web crawling.
+        
+        The driver is set up with multiple performance-enhancing options, including disabling images, CSS, plugins, and extensions, and uses a randomized user-agent. The Edge driver executable path is resolved relative to the project directory. The driver is configured with a 10-second page load timeout and a 3-second implicit wait. Raises a FileNotFoundError if the Edge driver executable is missing, and propagates any other exceptions encountered during driver creation.
+        
+        Returns:
+            Edge WebDriver: A configured Selenium Edge WebDriver instance ready for use.
+        
+        Raises:
+            FileNotFoundError: If the Edge driver executable is not found.
+            Exception: If driver creation fails for any other reason.
+        """
         try:
             ua = UserAgent()
             options = Options()
@@ -88,13 +107,25 @@ class BaseCrawler(ABC):
             raise
 
     def clean_text(self, text: str) -> str:
-        """텍스트 정리"""
+        """
+        Sanitize input text by trimming whitespace and replacing newlines and tabs with spaces.
+        
+        Returns an empty string if the input is falsy.
+        """
         if not text:
             return ""
         return text.strip().replace("\n", " ").replace("\t", " ")
 
     def extract_price(self, price_text: str) -> Optional[int]:
-        """가격 텍스트에서 숫자 추출"""
+        """
+        Extracts an integer price value from a string containing numeric characters.
+        
+        Parameters:
+            price_text (str): The text potentially containing a price.
+        
+        Returns:
+            Optional[int]: The extracted price as an integer, or None if no valid price is found.
+        """
         if not price_text:
             return None
 
@@ -107,7 +138,17 @@ class BaseCrawler(ABC):
     def create_burger_data_template(
         self, name: str, brand_name: str, brand_name_eng: str
     ) -> Dict[str, Any]:
-        """기본 버거 데이터 템플릿 생성"""
+        """
+        Create a standardized dictionary template for burger data with default fields and initial values.
+        
+        Parameters:
+            name (str): The name of the burger.
+            brand_name (str): The brand name in the local language.
+            brand_name_eng (str): The brand name in English.
+        
+        Returns:
+            Dict[str, Any]: A dictionary containing default fields for burger information, including name, brand details, description placeholders, price, availability, category, URLs, release date, patty type, and nutrition info.
+        """
         return {
             "name": name,
             "brand_name": brand_name,
