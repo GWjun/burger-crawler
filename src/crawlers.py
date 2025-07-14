@@ -10,13 +10,13 @@ from datetime import datetime
 from config import settings
 from src.__mock__.dummy_data import get_brand_dummy_data
 
-# Selenium imports (현재 더미 데이터 사용 중이므로 주석 처리)
-# from selenium import webdriver
-# from selenium.webdriver.chrome.options import Options
-# from selenium.webdriver.common.by import By
-# from selenium.webdriver.support.ui import WebDriverWait
-# from selenium.webdriver.support import expected_conditions as EC
-# from fake_useragent import UserAgent
+from selenium import webdriver
+from selenium.webdriver.edge.service import Service
+from selenium.webdriver.edge.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from fake_useragent import UserAgent
 
 
 class BaseCrawler(ABC):
@@ -31,22 +31,21 @@ class BaseCrawler(ABC):
 
     def get_selenium_driver(self):
         """Selenium WebDriver 설정 (실제 크롤링 시 사용)"""
-        # 현재는 더미 데이터를 사용하므로 주석 처리
-        # from selenium import webdriver
-        # from selenium.webdriver.chrome.options import Options
-        # from fake_useragent import UserAgent
-        #
-        # ua = UserAgent()
-        # options = Options()
-        # if settings.headless_mode:
-        #     options.add_argument('--headless')
-        # options.add_argument('--no-sandbox')
-        # options.add_argument('--disable-dev-shm-usage')
-        # options.add_argument(f'--user-agent={ua.random}')
-        #
-        # driver = webdriver.Chrome(options=options)
-        # return driver
-        pass
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from fake_useragent import UserAgent
+
+        ua = UserAgent()
+        options = Options()
+        if settings.headless_mode:
+            options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument(f"--user-agent={ua.random}")
+
+        service = Service(executable_path="edgedriver_win64/msedgedriver.exe")
+        driver = webdriver.Edge(service=service, options=options)
+        return driver
 
     def clean_text(self, text: str) -> str:
         """텍스트 정리"""
@@ -132,6 +131,12 @@ class LotteriaCrawler(BaseCrawler):
                         burger_data["shop_url"] = (
                             f"{self.base_url}/products/introductions/{item.get('presPrdId')}"
                         )
+                        # 영양 정보 크롤링
+                        nutrition_info = self._get_nutrition_info(
+                            burger_data["shop_url"]
+                        )
+                        if nutrition_info:
+                            burger_data["nutrition"] = nutrition_info
                         burgers.append(burger_data)
             else:
                 logger.warning("Could not find pList data in the HTML.")
@@ -145,6 +150,66 @@ class LotteriaCrawler(BaseCrawler):
 
         logger.info(f"Finished {self.brand_name} crawling. Found {len(burgers)} items")
         return burgers
+
+    def _get_nutrition_info(self, product_url: str) -> Optional[Dict[str, Any]]:
+        """개별 제품 상세 페이지에서 영양 정보 크롤링"""
+        logger.info(f"Crawling nutrition info for: {product_url}")
+        driver = None
+        try:
+            driver = self.get_selenium_driver()
+            driver.get(product_url)
+
+            # 영양 정보 테이블이 로드될 때까지 대기
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "table.tbl_ty01"))
+            )
+
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+            nutrition_table = soup.select_one("table.tbl_ty01")
+
+            nutrition_data = {}
+            if nutrition_table:
+                rows = nutrition_table.find_all("tr")
+                for row in rows:
+                    th = row.find("th")
+                    td = row.find("td")
+                    if th and td:
+                        key = th.get_text(strip=True)
+                        value = td.get_text(strip=True)
+
+                        if "열량" in key:
+                            nutrition_data["calories"] = self._parse_nutrition_value(
+                                value
+                            )
+                        elif "지방" in key:
+                            nutrition_data["fat"] = self._parse_nutrition_value(value)
+                        elif "단백질" in key:
+                            nutrition_data["protein"] = self._parse_nutrition_value(
+                                value
+                            )
+                        elif "당류" in key:
+                            nutrition_data["sugar"] = self._parse_nutrition_value(value)
+                        elif "나트륨" in key:
+                            nutrition_data["sodium"] = self._parse_nutrition_value(
+                                value
+                            )
+            return nutrition_data
+        except Exception as e:
+            logger.error(f"Error crawling nutrition info from {product_url}: {e}")
+            return None
+        finally:
+            if driver:
+                driver.quit()
+
+    def _parse_nutrition_value(self, text: str) -> Optional[float]:
+        """영양 정보 텍스트에서 숫자(float) 추출"""
+        match = re.search(r"([\d.]+)", text)
+        if match:
+            try:
+                return float(match.group(1))
+            except ValueError:
+                return None
+        return None
 
 
 class BurgerKingCrawler(BaseCrawler):

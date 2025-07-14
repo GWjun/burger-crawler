@@ -6,7 +6,5 @@ loguru==0.7.2
 python-dotenv==1.0.0
 pydantic-settings==2.1.0
 schedule==1.2.0
-
-# Optional Dependencies (실제 크롤링 구현시 필요)
-# selenium==4.15.0
-# fake-useragent==1.4.0
+selenium==4.15.0
+fake-useragent==1.4.0
