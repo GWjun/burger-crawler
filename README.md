@@ -4,7 +4,40 @@
   <p>햄버거 신제품 정보를 자동 수집하여 Supabase에 저장</p>
 </div>
 
-## 설치
+## 드라이버 설치
+
+#### Microsoft Edge 브라우저 및 WebDriver
+
+본 프로젝트는 Selenium WebDriver를 사용하여 동적 웹 페이지를 크롤링합니다. Edge 브라우저와 호환되는 WebDriver가 필요합니다.
+
+**필수 요구사항:**
+
+- **Microsoft Edge 브라우저**: 버전 138.0.3351.83 이상
+- **Edge WebDriver**: 브라우저 버전과 일치하는 msedgedriver.exe
+
+**WebDriver 설치:**
+
+- [Microsoft Edge WebDriver 다운로드 페이지](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/)에서 브라우저 버전과 일치하는 드라이버 다운로드
+- `edgedriver_win64/` 폴더에 `msedgedriver.exe` 파일 배치
+
+```
+burger-crawler/
+├── edgedriver_win64/
+│   └── msedgedriver.exe  # Edge WebDriver 실행 파일
+└── ...
+```
+
+**버전 호환성 확인:**
+
+```bash
+# Edge 브라우저 버전 확인
+edge://version/
+
+# WebDriver 버전 확인
+./edgedriver_win64/msedgedriver.exe --version
+```
+
+## 패키지 설치
 
 ### Windows
 
@@ -153,13 +186,24 @@ python main.py scheduler
 ```
 burger-crawler/
 ├── src/
-│   ├── crawlers.py      # 크롤러 클래스들
-│   ├── database.py      # Supabase 연동
-│   └── scheduler.py     # 스케줄링 로직
-├── logs/                # 로그 파일들
-├── config.py            # 설정 관리
-├── main.py              # 메인 실행 파일
-├── requirements.txt     # 의존성 패키지
-├── .env.example         # 환경 변수 예시
+│   ├── crawlers/           # 크롤러 패키지
+│   │   ├── __init__.py     # 패키지 초기화
+│   │   ├── base.py         # 기본 크롤러 클래스
+│   │   ├── factory.py      # 크롤러 팩토리
+│   │   ├── lotteria.py     # 롯데리아 크롤러
+│   │   ├── burger_king.py  # 버거킹 크롤러
+│   │   ├── nobrand_burger.py # 노브랜드 버거 크롤러
+│   │   └── kfc.py          # KFC 크롤러
+│   ├── database.py         # Supabase 연동
+│   ├── scheduler.py        # 스케줄링 로직
+│   └── __mock__/           # 테스트용 더미 데이터
+│       └── dummy_data.py
+├── edgedriver_win64/       # Edge WebDriver
+│   └── msedgedriver.exe    # Edge WebDriver 실행 파일
+├── logs/                   # 로그 파일들
+├── config.py               # 설정 관리
+├── main.py                 # 메인 실행 파일
+├── requirements.txt        # 의존성 패키지
+├── .env.example            # 환경 변수 예시
 └── README.md
 ```

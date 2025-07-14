@@ -12,7 +12,7 @@ sys.path.insert(0, str(project_root))
 load_dotenv()
 
 from src.scheduler import CrawlerScheduler
-from src.crawlers import get_crawler, CRAWLERS
+from src.crawlers import get_crawler, get_available_brands
 from src.database import SupabaseManager
 from src.__mock__.dummy_data import create_dummy_burger_data, get_brand_dummy_data
 from config import settings
@@ -137,7 +137,7 @@ def main():
                 brand = sys.argv[2]
                 test_crawler(brand)
             else:
-                logger.info("Available brands: " + ", ".join(CRAWLERS.keys()))
+                logger.info("Available brands: " + ", ".join(get_available_brands()))
         elif command == "test-dummy":
             test_dummy_data()
         elif command == "run-once":
@@ -172,7 +172,7 @@ Commands:
   test-dummy    - Test dummy data insertion
   
 Available brands: """
-        + ", ".join(CRAWLERS.keys())
+        + ", ".join(get_available_brands())
     )
 
 
