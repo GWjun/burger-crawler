@@ -123,28 +123,13 @@ def test_dummy_data():
 
 
 def run_single_crawler(brand: str):
-    """특정 브랜드 크롤러 한 번 실행 (데이터베이스 저장)"""
+    """특정 브랜드 크롤러 한 번 실행 (사용자 확인 후 데이터베이스 저장)"""
     try:
         logger.info(f"Starting single crawl for {brand}")
 
-        # 크롤러 생성 및 실행
-        crawler = get_crawler(brand)
-        data = crawler.crawl()
-
-        if not data:
-            logger.warning(f"No data found for {brand}")
-            return
-
-        logger.info(f"Crawled {len(data)} items for {brand}")
-
-        # 데이터베이스에 저장
-        db = SupabaseManager()
-        success = db.insert_bulk_burger_data(data)
-
-        if success:
-            logger.info(f"Successfully saved {len(data)} items for {brand} to database")
-        else:
-            logger.error(f"Failed to save data for {brand} to database")
+        # 스케줄러를 통해 실행 (사용자 확인 포함)
+        scheduler = CrawlerScheduler()
+        scheduler.run_single_crawler(brand, auto_confirm=False)
 
     except Exception as e:
         logger.error(f"Single crawl failed for {brand}: {str(e)}")

@@ -12,7 +12,7 @@ class CrawlerScheduler:
         self.db_manager = SupabaseManager()
         logger.info("Crawler Scheduler initialized")
 
-    def run_single_crawler(self, brand: str):
+    def run_single_crawler(self, brand: str, auto_confirm: bool = False):
         """단일 브랜드 크롤링 실행"""
         try:
             logger.info(f"Starting crawl for {brand}")
@@ -20,7 +20,7 @@ class CrawlerScheduler:
             burger_data = crawler.crawl()
 
             if burger_data:
-                # 중복 체크 후 삽입
+                # 중복 체크 후 신제품 필터링
                 new_items = []
                 for item in burger_data:
                     if not self.db_manager.check_duplicate_product(
@@ -29,6 +29,39 @@ class CrawlerScheduler:
                         new_items.append(item)
 
                 if new_items:
+                    # 신제품 정보 출력
+                    logger.info(f"\n{'='*50}")
+                    logger.info(f"발견된 신제품: {len(new_items)}개 ({brand})")
+                    logger.info(f"{'='*50}")
+
+                    for i, item in enumerate(new_items, 1):
+                        logger.info(f"\n[{i}] {item['name']}")
+                        logger.info(f"    가격: {item.get('price', 'N/A')}원")
+                        logger.info(f"    설명: {item.get('description', 'N/A')}")
+                        if item.get("image_url"):
+                            logger.info(f"    이미지: {item['image_url']}")
+
+                    logger.info(f"\n{'='*50}")
+
+                    # 사용자 확인 (auto_confirm이 False인 경우에만)
+                    if not auto_confirm:
+                        while True:
+                            user_input = (
+                                input(
+                                    f"\n이 {len(new_items)}개의 신제품을 데이터베이스에 추가하시겠습니까? (y/n): "
+                                )
+                                .strip()
+                                .lower()
+                            )
+                            if user_input in ["y", "yes", "네", "ㅇ"]:
+                                break
+                            elif user_input in ["n", "no", "아니오", "ㄴ"]:
+                                logger.info("사용자가 추가를 취소했습니다.")
+                                return
+                            else:
+                                print("y(예) 또는 n(아니오)로 답해주세요.")
+
+                    # 데이터베이스에 저장
                     success = self.db_manager.insert_bulk_burger_data(new_items)
                     if success:
                         logger.info(
@@ -50,7 +83,7 @@ class CrawlerScheduler:
         start_time = datetime.now()
 
         for brand in get_available_brands():
-            self.run_single_crawler(brand)
+            self.run_single_crawler(brand, auto_confirm=True)  # 자동 확인으로 실행
             time.sleep(settings.request_delay)  # 요청 간 지연
 
         end_time = datetime.now()
