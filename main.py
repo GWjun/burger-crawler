@@ -12,7 +12,7 @@ sys.path.insert(0, str(project_root))
 load_dotenv()
 
 from src.scheduler import CrawlerScheduler
-from src.crawlers import get_crawler, CRAWLERS
+from src.crawlers import get_crawler, get_available_brands
 from src.database import SupabaseManager
 from src.__mock__.dummy_data import create_dummy_burger_data, get_brand_dummy_data
 from config import settings
@@ -122,6 +122,19 @@ def test_dummy_data():
         logger.error(f"Dummy data test error: {str(e)}")
 
 
+def run_single_crawler(brand: str):
+    """특정 브랜드 크롤러 한 번 실행 (사용자 확인 후 데이터베이스 저장)"""
+    try:
+        logger.info(f"Starting single crawl for {brand}")
+
+        # 스케줄러를 통해 실행 (사용자 확인 포함)
+        scheduler = CrawlerScheduler()
+        scheduler.run_single_crawler(brand, auto_confirm=False)
+
+    except Exception as e:
+        logger.error(f"Single crawl failed for {brand}: {str(e)}")
+
+
 def main():
     """메인 함수"""
     setup_logger()
@@ -137,7 +150,14 @@ def main():
                 brand = sys.argv[2]
                 test_crawler(brand)
             else:
-                logger.info("Available brands: " + ", ".join(CRAWLERS.keys()))
+                logger.info("Available brands: " + ", ".join(get_available_brands()))
+        elif command == "crawl":
+            if len(sys.argv) > 2:
+                brand = sys.argv[2]
+                run_single_crawler(brand)
+            else:
+                logger.error("Please specify a brand")
+                logger.info("Available brands: " + ", ".join(get_available_brands()))
         elif command == "test-dummy":
             test_dummy_data()
         elif command == "run-once":
@@ -166,13 +186,13 @@ Usage: python main.py [command]
 Commands:
   scheduler       - Start the scheduler (default)
   run-once        - Run all crawlers once
+  crawl <brand>   - Run single brand crawler once and save to DB
   test-db         - Test database connection
   test-dummy      - Test with dummy data
-  test-crawler <brand>  - Test specific crawler
-  test-dummy    - Test dummy data insertion
+  test-crawler <brand>  - Test specific crawler (no DB save)
   
 Available brands: """
-        + ", ".join(CRAWLERS.keys())
+        + ", ".join(get_available_brands())
     )
 
 

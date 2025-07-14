@@ -1,8 +1,30 @@
+import os
 from pydantic_settings import BaseSettings
 from typing import Optional
 
 
+def get_env_file():
+    """환경에 따른 .env 파일 경로 반환"""
+    env = os.getenv("ENVIRONMENT", "development")
+
+    if env == "production":
+        if os.path.exists(".env.production"):
+            return ".env.production"
+    else:
+        if os.path.exists(".env.development"):
+            return ".env.development"
+
+    # 기본 .env 파일 사용
+    if os.path.exists(".env"):
+        return ".env"
+
+    return None
+
+
 class Settings(BaseSettings):
+    # Environment
+    environment: str = "development"
+
     # Supabase
     supabase_url: str
     supabase_key: str
@@ -22,8 +44,14 @@ class Settings(BaseSettings):
     crawl_interval_hours: int = 6
 
     class Config:
-        env_file = ".env"
         case_sensitive = False
+        env_file = get_env_file()
 
 
-settings = Settings()
+def get_settings() -> Settings:
+    """설정 인스턴스를 반환하는 팩토리 함수"""
+    return Settings()
+
+
+# 전역 설정 인스턴스
+settings = get_settings()

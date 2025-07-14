@@ -21,17 +21,20 @@ echo "Creating logs directory..."
 mkdir -p logs
 
 # 환경 변수 파일 복사
-echo "Setting up environment file..."
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "⚠️  Please edit .env file with your Supabase credentials"
+echo "Setting up environment files..."
+if [ ! -f .env.development ]; then
+    cp .env.example .env.development
+    echo "✅ Created .env.development"
+fi
+if [ ! -f .env.production ]; then
+    cp .env.example .env.production
+    echo "✅ Created .env.production"
 fi
 
 echo "✅ Setup completed!"
 echo ""
 echo "Next steps:"
-echo "1. Edit .env file with your Supabase credentials"
-echo "2. Test database connection: python main.py test-db"
-echo "3. Test crawler: python main.py test-crawler mcdonalds"
-echo "4. Run once: python main.py run-once"
-echo "5. Start scheduler: python main.py scheduler"
+echo "1. Edit .env.development and .env.production files with your Supabase credentials"
+echo "2. Run development: ./run_dev.sh"
+echo "3. Run production: ./run_prod.sh"
+echo "4. Test database connection: python main.py test-db"

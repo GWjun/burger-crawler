@@ -31,7 +31,7 @@ ENV/
 
 # Environment Variables
 .env
-.env.local
+.env.development
 .env.production
 .env.staging
 
@@ -92,3 +92,7 @@ webdriver/
 # Scraped data
 scraped_data/
 output/
+
+note.txt
+edgedriver_win64/
+log.txt
