@@ -232,25 +232,36 @@ class BurgerKingCrawler(BaseCrawler):
         self._click_apply_button_fast(driver)
 
     def _collect_new_products(self, driver):
-        """신제품 데이터 수집 - 특정 카테고리만"""
+        """신제품 데이터 수집 - HTML 구조에 맞춰 수정"""
         try:
             logger.info("Collecting new products from specific categories...")
 
-            # 수집할 카테고리 목록
+            # 수집할 카테고리 목록 (HTML에 있는 정확한 이름으로 수정)
             target_categories = [
                 "오리지널스&맥시멈",
                 "프리미엄",
-                "와퍼&주니어",
-                "치킨&슈림프버거",
+                # "와퍼&주니어", "치킨&슈림프버거" - HTML에 없어서 제외
             ]
 
             all_products = []
 
+            # 먼저 .menu_list_wrap이 로드될 때까지 대기
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "menu_list_wrap"))
+                )
+                logger.info("Menu list container found")
+            except TimeoutException:
+                logger.warning("Menu list container not found")
+                return get_brand_dummy_data("burger_king", 2)
+
+            # 각 카테고리별로 제품 수집
             for category in target_categories:
                 logger.info(f"Looking for category: {category}")
-                products_in_category = self._collect_products_by_category(
+                products_in_category = self._collect_products_by_category_v2(
                     driver, category
                 )
+
                 if products_in_category:
                     logger.info(
                         f"Found {len(products_in_category)} products in {category}"
@@ -261,9 +272,9 @@ class BurgerKingCrawler(BaseCrawler):
 
             if all_products:
                 logger.info(f"Total products found: {len(all_products)}")
-                # TODO: 실제 제품 데이터 파싱 로직 구현
-                logger.warning("Product parsing not implemented yet - using dummy data")
-                return get_brand_dummy_data("burger_king", len(all_products))
+                # 실제 제품 데이터 파싱
+                parsed_products = self._parse_product_data(all_products)
+                return parsed_products
             else:
                 logger.warning(
                     "No products found in target categories - using dummy data"
@@ -274,42 +285,37 @@ class BurgerKingCrawler(BaseCrawler):
             logger.error(f"Error collecting products: {str(e)}")
             return get_brand_dummy_data("burger_king", 1)
 
-    def _collect_products_by_category(self, driver, category_name):
-        """특정 카테고리의 제품들 수집"""
+    def _collect_products_by_category_v2(self, driver, category_name):
+        """HTML 구조에 맞춘 카테고리별 제품 수집"""
         try:
-            # h3 태그에서 카테고리명 찾기
-            category_selectors = [
-                f"//h3[contains(text(), '{category_name}')]",
-                f"//h3[contains(normalize-space(text()), '{category_name}')]",
-                f"//*[self::h3 or self::h2 or self::h4][contains(text(), '{category_name}')]",
-            ]
+            # divide_group 내의 h3.tit01에서 카테고리 찾기
+            category_xpath = f"//div[@class='divide_group']//h3[@class='tit01'][contains(text(), '{category_name}')]"
 
-            category_element = None
-            for selector in category_selectors:
-                try:
-                    category_elements = driver.find_elements(By.XPATH, selector)
-                    if category_elements:
-                        # 정확히 일치하는 카테고리 찾기
-                        for elem in category_elements:
-                            if category_name in elem.text.strip():
-                                category_element = elem
-                                break
-                        if category_element:
-                            break
-                except Exception as e:
-                    logger.debug(f"Error with selector {selector}: {str(e)}")
-                    continue
-
-            if not category_element:
+            try:
+                category_element = driver.find_element(By.XPATH, category_xpath)
+                logger.info(f"Found category element for '{category_name}'")
+            except NoSuchElementException:
                 logger.warning(f"Category '{category_name}' not found")
                 return []
 
-            logger.info(f"Found category element for '{category_name}'")
+            # 해당 카테고리의 부모 divide_group에서 menu_list 찾기
+            try:
+                divide_group = category_element.find_element(
+                    By.XPATH, "./ancestor::div[@class='divide_group']"
+                )
+                menu_list = divide_group.find_element(By.CLASS_NAME, "menu_list")
 
-            # 카테고리 하위의 제품들 찾기
-            products = self._find_products_under_category(driver, category_element)
+                # menu_list 내의 모든 li 요소들 (각각이 제품)
+                product_items = menu_list.find_elements(By.TAG_NAME, "li")
 
-            return products
+                logger.info(
+                    f"Found {len(product_items)} product items in '{category_name}'"
+                )
+                return product_items
+
+            except NoSuchElementException:
+                logger.warning(f"Menu list not found for category '{category_name}'")
+                return []
 
         except Exception as e:
             logger.error(
@@ -317,78 +323,85 @@ class BurgerKingCrawler(BaseCrawler):
             )
             return []
 
-    def _find_products_under_category(self, driver, category_element):
-        """카테고리 요소 하위의 제품들 찾기"""
-        try:
-            # 카테고리 요소의 부모 또는 다음 형제 요소에서 제품들 찾기
-            product_containers = []
+    def _parse_product_data(self, product_elements):
+        """제품 요소들을 파싱해서 데이터 추출 - 파생 제품 제외"""
+        products = []
 
-            # 방법 1: 카테고리의 부모 요소에서 제품 찾기
+        # 제외할 키워드 목록
+        exclude_keywords = ["세트", "라지세트", "팩", "콤보", "더블", "라지", "패키지"]
+
+        for product_element in product_elements:
             try:
-                parent = category_element.find_element(By.XPATH, "./..")
-                products_in_parent = parent.find_elements(
-                    By.XPATH,
-                    ".//*[contains(@class, 'menu') or contains(@class, 'product') or contains(@class, 'item')]",
-                )
-                if products_in_parent:
-                    product_containers.extend(products_in_parent)
-            except:
-                pass
-
-            # 방법 2: 카테고리 다음의 형제 요소들에서 제품 찾기
-            try:
-                # 다음 h3까지의 모든 요소들 중에서 제품 찾기
-                following_elements = driver.find_elements(
-                    By.XPATH,
-                    f"//h3[contains(text(), '{category_element.text}')]/following-sibling::*[following-sibling::h3 or position()=last()]",
-                )
-
-                for elem in following_elements:
-                    # 제품으로 보이는 요소들 찾기
-                    products_in_elem = elem.find_elements(
-                        By.XPATH,
-                        ".//*[contains(@class, 'menu') or contains(@class, 'product') or contains(@class, 'item')]",
-                    )
-                    product_containers.extend(products_in_elem)
-
-            except Exception as e:
-                logger.debug(f"Error finding following elements: {str(e)}")
-
-            # 방법 3: 카테고리 요소 다음에 오는 div들에서 제품 찾기
-            try:
-                next_divs = driver.find_elements(
-                    By.XPATH,
-                    f"//h3[contains(text(), '{category_element.text}')]/following-sibling::div",
-                )
-
-                for div in next_divs[:5]:  # 처음 몇 개의 div만 확인
-                    products_in_div = div.find_elements(
-                        By.XPATH,
-                        ".//*[contains(@class, 'menu') or contains(@class, 'product') or contains(@class, 'item')]",
-                    )
-                    if products_in_div:
-                        product_containers.extend(products_in_div)
-
-            except Exception as e:
-                logger.debug(f"Error finding next divs: {str(e)}")
-
-            # 중복 제거
-            unique_products = []
-            seen_elements = set()
-
-            for product in product_containers:
+                # 제품명을 먼저 추출해서 필터링 검사
                 try:
-                    # 요소의 위치를 기준으로 중복 체크
-                    location = (product.location["x"], product.location["y"])
-                    if location not in seen_elements and product.is_displayed():
-                        unique_products.append(product)
-                        seen_elements.add(location)
+                    name_element = product_element.find_element(
+                        By.CSS_SELECTOR, ".cont .tit span"
+                    )
+                    product_name = self.clean_text(name_element.text)
                 except:
+                    product_name = "Unknown Product"
+
+                # 파생 제품 필터링 - 제외할 키워드가 포함된 제품은 스킵
+                if any(keyword in product_name for keyword in exclude_keywords):
+                    logger.debug(f"Excluding derived product: {product_name}")
                     continue
 
-            logger.info(f"Found {len(unique_products)} unique products under category")
-            return unique_products
+                product_data = self.create_burger_data_template(
+                    "", self.brand_name, self.brand_name_eng
+                )
 
-        except Exception as e:
-            logger.error(f"Error finding products under category: {str(e)}")
-            return []
+                # 제품명 설정
+                product_data["name"] = product_name
+
+                # 이미지 URL 추출
+                try:
+                    img_element = product_element.find_element(
+                        By.CSS_SELECTOR, ".prd_image img"
+                    )
+                    product_data["image_url"] = img_element.get_attribute("src")
+                except:
+                    product_data["image_url"] = None
+
+                # 제품 설명 추출
+                try:
+                    desc_element = product_element.find_element(
+                        By.CSS_SELECTOR, ".set_info span"
+                    )
+                    product_data["description"] = self.clean_text(desc_element.text)
+                except:
+                    product_data["description"] = None
+
+                # NEW 플래그 확인
+                try:
+                    new_flag = product_element.find_element(
+                        By.CSS_SELECTOR, ".flag_menu.new_menu"
+                    )
+                    if new_flag:
+                        product_data["dev_comment"] = "신제품"
+                except:
+                    pass
+
+                # 상세 페이지 링크 추출 (나중에 영양정보용)
+                try:
+                    detail_btn = product_element.find_element(
+                        By.CSS_SELECTOR, ".btn_detail"
+                    )
+                    # 클릭 이벤트에서 URL 추출하는 로직 필요
+                    product_data["shop_url"] = f"{self.base_url}/menu/detail"  # 임시
+                except:
+                    product_data["shop_url"] = None
+
+                # 기본값 설정
+                product_data["price"] = 0  # 가격 정보가 없음
+                product_data["available"] = True
+                product_data["category"] = "버거"
+
+                products.append(product_data)
+                logger.info(f"Parsed product: {product_data['name']}")
+
+            except Exception as e:
+                logger.error(f"Error parsing product element: {str(e)}")
+                continue
+
+        logger.info(f"Filtered out derived products. Final count: {len(products)}")
+        return products
