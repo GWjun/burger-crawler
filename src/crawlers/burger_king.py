@@ -119,7 +119,10 @@ class BurgerKingCrawler(BaseCrawler):
                 for selector in selectors:
                     try:
                         new_product_tag = driver.find_element(By.XPATH, selector)
-                        if new_product_tag.is_enabled() and new_product_tag.is_displayed():
+                        if (
+                            new_product_tag.is_enabled()
+                            and new_product_tag.is_displayed()
+                        ):
                             break
                     except:
                         continue
@@ -381,14 +384,26 @@ class BurgerKingCrawler(BaseCrawler):
         for product in products:
             try:
                 if product.get("shop_url") and "/menu/detail/" in product["shop_url"]:
-                    nutrition_data = self._get_product_nutrition(
+                    result_data = self._get_product_nutrition(
                         driver, product["shop_url"]
                     )
 
-                    if nutrition_data:
-                        product.update(nutrition_data)
+                    if result_data:
+                        if (
+                            isinstance(result_data, dict)
+                            and "nutrition_info" in result_data
+                        ):
+                            # 영양정보와 설명 정보가 분리된 경우
+                            if result_data["nutrition_info"]:
+                                product["nutrition"] = result_data["nutrition_info"]
+                            if result_data["description_info"]:
+                                product.update(result_data["description_info"])
+                        else:
+                            # 영양정보만 있는 경우
+                            product["nutrition"] = result_data
+
                         logger.info(f"{product['name']} 영양정보 수집 완료")
-                    
+
                     time.sleep(1)
                 else:
                     logger.warning(f"{product['name']} 상세 URL 없음")
@@ -396,14 +411,16 @@ class BurgerKingCrawler(BaseCrawler):
                 products_with_nutrition.append(product)
 
             except Exception as e:
-                logger.error(f"{product.get('name', 'Unknown')} 영양정보 수집 실패: {str(e)}")
+                logger.error(
+                    f"{product.get('name', 'Unknown')} 영양정보 수집 실패: {str(e)}"
+                )
                 products_with_nutrition.append(product)
                 continue
 
         return products_with_nutrition
 
     def _get_product_nutrition(self, driver, detail_url):
-        """제품 상세 페이지에서 영양정보 추출"""
+        """제품 상세 페이지에서 영양정보와 설명 추출"""
         try:
             driver.get(detail_url)
 
@@ -413,10 +430,16 @@ class BurgerKingCrawler(BaseCrawler):
             )
             time.sleep(3)
 
+            # 상세 설명 먼저 추출
+            description_data = self._extract_description_from_detail_page(driver)
+
             # 영양정보 버튼 찾기 및 클릭
             nutrition_button = self._find_nutrition_button(driver)
             if not nutrition_button:
-                return None
+                # 영양정보가 없어도 설명 데이터는 반환
+                return (
+                    {"description_info": description_data} if description_data else None
+                )
 
             driver.execute_script("arguments[0].click();", nutrition_button)
             time.sleep(5)
@@ -427,23 +450,22 @@ class BurgerKingCrawler(BaseCrawler):
                     EC.presence_of_element_located((By.CLASS_NAME, "modalWrap"))
                 )
             except:
-                return None
+                return (
+                    {"description_info": description_data} if description_data else None
+                )
 
             # 영양정보 추출
             nutrition_data = self._extract_nutrition_from_modal(driver)
             self._close_nutrition_modal(driver)
 
-            # 상세 설명 추출
-            description_data = self._extract_description_from_detail_page(driver)
-
-            # 데이터 결합
-            result_data = {}
+            # 결과 데이터 구성
+            result = {}
             if nutrition_data:
-                result_data.update(nutrition_data)
+                result["nutrition_info"] = nutrition_data
             if description_data:
-                result_data.update(description_data)
+                result["description_info"] = description_data
 
-            return result_data if result_data else None
+            return result if result else None
 
         except Exception as e:
             logger.error(f"영양정보 추출 실패 ({detail_url}): {str(e)}")
@@ -481,7 +503,10 @@ class BurgerKingCrawler(BaseCrawler):
             for button in buttons:
                 try:
                     button_text = button.text.strip()
-                    if any(keyword in button_text for keyword in ["원산지", "영양성분", "알레르기"]):
+                    if any(
+                        keyword in button_text
+                        for keyword in ["원산지", "영양성분", "알레르기"]
+                    ):
                         if button.is_displayed() and button.is_enabled():
                             return button
                 except Exception:
@@ -520,32 +545,46 @@ class BurgerKingCrawler(BaseCrawler):
 
                     # 영양정보 추출 (괄호 안 숫자 제거)
                     try:
-                        nutrition_data["calories"] = self._parse_number(cells[1].text.strip())
+                        nutrition_data["calories"] = self._parse_number(
+                            cells[1].text.strip()
+                        )
                     except:
                         nutrition_data["calories"] = None
 
                     try:
                         protein_text = cells[2].text.strip()
-                        protein_value = protein_text.split("(")[0] if "(" in protein_text else protein_text
+                        protein_value = (
+                            protein_text.split("(")[0]
+                            if "(" in protein_text
+                            else protein_text
+                        )
                         nutrition_data["protein"] = self._parse_number(protein_value)
                     except:
                         nutrition_data["protein"] = None
 
                     try:
                         sodium_text = cells[3].text.strip()
-                        sodium_value = sodium_text.split("(")[0] if "(" in sodium_text else sodium_text
+                        sodium_value = (
+                            sodium_text.split("(")[0]
+                            if "(" in sodium_text
+                            else sodium_text
+                        )
                         nutrition_data["sodium"] = self._parse_number(sodium_value)
                     except:
                         nutrition_data["sodium"] = None
 
                     try:
-                        nutrition_data["sugar"] = self._parse_number(cells[4].text.strip())
+                        nutrition_data["sugar"] = self._parse_number(
+                            cells[4].text.strip()
+                        )
                     except:
                         nutrition_data["sugar"] = None
 
                     try:
                         fat_text = cells[5].text.strip()
-                        fat_value = fat_text.split("(")[0] if "(" in fat_text else fat_text
+                        fat_value = (
+                            fat_text.split("(")[0] if "(" in fat_text else fat_text
+                        )
                         nutrition_data["fat"] = self._parse_number(fat_value)
                     except:
                         nutrition_data["fat"] = None
